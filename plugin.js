@@ -7,38 +7,50 @@
  * @source    _Source_URL_
  * @license   MIT License
  * @version   v0.5.0 R05.06.2013
- * @requires  jQuery 1.4+
+ * @requires  jQuery 1.4.3+
  */
 ;(function ($) {
 
 	$.Plugin = (function () {
 
-		// Plugin.js version
-		var version = '0.5.0';
+		// Plugin.js info
+		var info = {
+			'id': 'PluginJS',
+			'jQname': 'pluginjs',
+			'version': '0.5.0'
+		};
 
 		// return a basic plugin
-		var Plugin = function Plugin(elements, options) {
-			return __constructor.apply(this, arguments);
-		};
-		
-		var __constructor = function (elements, options) {
-			options = options || {};
+		var Plugin = function Plugin(options) {
+			
+			if ( !(this instanceof Plugin)) {
+				throw Error('Missing `new` construct');
+				return this;
+			}
+			
+			// Allow `options` to simply be a selector string
+			if (typeof options === 'string') {
+				options = { el: options };
+			}
+			
+			// Save Construction Params for later reference
+			this.options = options || {};
 
 			// Setup a bogus element for events
 			// This is in case we don't have an element before setting or triggering events
 			this.$el = Plugin.bogusElement;
 
 			// Setup the configuration
-			$.extend(true, this, options || {});
+			$.extend(true, this, options);
 
 			// Setup and cache the element
-			this.setElement(elements);
+			this.setElement(this.options.el);
 
 			// Run the `initialize()` if available
 			if (typeof this.initialize === 'function') {
-				this.initialize.apply(this, [elements, options]);
+				this.initialize.apply(this, arguments);
 			}
-			
+
 			return this;
 		};
 
@@ -48,7 +60,7 @@
 		$.extend(Plugin, {
 			
 			// Plugin.js Version
-			'version': version,
+			'version': info.version,
 			
 			'config': {
 				'jQevents': ['on','off','one','trigger'],
@@ -58,18 +70,18 @@
 					}
 				}
 			},
-			
-			// Mockup console for safety
-			'console': function () {
-				return console || { log: $.noop, debug: $.noop, error: $.noop }
-			}(),
 
 			// Plugin statics that should be set for each new plugin
 			'statics': {
+				'id': null,
 				'version': null,
-				'name': null,
 				'jQname': null
 			},
+			
+			// Mockup console for safety
+			'console': (function () {
+				return console || { log: $.noop, debug: $.noop, error: $.noop }
+			})(),
 
 			/**
 			 * Events Mixin
@@ -114,25 +126,29 @@
 			 * @param statics
 			 */
 			'extend': function (properties, statics) {
+				
+				var Parent = this,
+					  P = Plugin;
 
 				// The new Plugin constructor
-				var Child = function Plugin(elements, options) {
-					return __constructor.apply(this, arguments);
+				var Child = function Plugin (options) {
+					return P.apply(this, arguments);
 				};
 
-				// Extend the prototype with passed in properties
-				Child.prototype = $.extend(true, {},
-					this.prototype,
-					properties || {}
-				);
-
 				// Extend the statics with passed in statics
-				$.extend(true,
-					Child,
-					$.extend({}, Plugin.statics),
-					statics || {},
-					{ extend: this.extend, constructor: this }
+				$.extend(true, Child,
+					$.extend({}, P.statics), // default statics for all
+					statics,
+					{ extend: Parent.extend }
 				);
+				
+				// Prototype Chaining
+				var Surrogate = function(){ this.constructor = Child; };
+				Surrogate.prototype = Parent.prototype;
+				Child.prototype = new Surrogate;
+
+				// Extend the Childs prototype with passed in properties
+				if (properties) $.extend(true, Child.prototype, properties, { parent: Parent });
 
 				// Returns a constructor
 				return Child;
@@ -144,7 +160,7 @@
 		 * Inheritable Methods for the `Plugin` constructor
 		 */
 		$.extend(Plugin.prototype, {
-
+			
 			/**
 			 * Set Element for Plugin
 			 *
@@ -165,6 +181,7 @@
 					$el = Plugin.bogusElement.extend({ selector: $el.selector });
 				}
 				this.$el = $el;
+				this.el = $el[0];
 
 				// Copy over events to main object
 				Plugin.eventProxy(this, this.$el);
@@ -173,24 +190,21 @@
 				if (Plugin.config.events) {
 					this.on(Plugin.config.events);
 				}
-//				if (this.Constuctor.options.events) {
-//					this.on(this.Constuctor.arguments[1].events);
-//				}
-//				if (this.Constuctor.statics.events) {
-//					this.on(this.Constuctor.arguments[2].events);
-//				}
+				if (this.options.events) {
+					this.on(this.options.events);
+				}
 				
 				// If no elements were found, write error and finish
 				if (this.$el.bogus) {
-					this.trigger('error', [element + ': No matching elements were found on the page.']);
+					this.trigger('error', ['No matching elements were found on the page ('+element+')']);
 					return this;
 				}
 				
 				// Set the unique ID of this instance
-				this.id = this.$el[0].id || this.$el.attr({ id: (Date.now() + 1).toString(36) })[0].id;
+				this.id = this.el.id || this.$el.attr({ id: (Date.now() + 1).toString(36) })[0].id;
 
 				// Attach the Plugin to its element
-				this.$el.data(this.jQdata, this);
+				this.$el.data(this.jQname, this);
 				
 				return this;
 			}
@@ -198,7 +212,8 @@
 		});
 		
 		// Return the Constructor: `$.Plugin()`
-		return Plugin;
+		return Plugin.extend({}, info);
+		
 	})();
 
 })(jQuery);
