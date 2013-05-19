@@ -78,25 +78,57 @@ describe('Insantiating', function () {
 		
 		it('should merge `options.defaults` and `prototype.defaults`')
 		
+		it('should put all other `options` directly on `this`')
+		
 		it('should run an `initialize()` method if available', function () {
+			// direct instantiation
 			assert.throws(function () {
 				var p = new $.Plugin({
+					el: '#mocha',
 					initialize: function () {
 						throw new Success('It worked!');
 					}
 				});
 			}, Success, 'It worked!');
+			
+			// extending and instantiating
+			assert.throws(function () {
+				var P = $.Plugin.extend({
+					el: '#mocha',
+					initialize: function () {
+						throw new Success('It worked!');
+					}
+				});
+
+				var p2 = new P();
+			}, Success, 'It worked!');
 		})
 		
 		it('should create an instance for each passed in element')
 		it('should give each instance a unique ID')
-		it('should set a jQuery bridge function')
 		
 		it('should be an `instanceof $.Plugin`',function () {
 			var P = $.Plugin.extend({},{ id: 'Plugin' });
 			var p = new P();
 			
 			assert.instanceOf(p, $.Plugin);
+		})
+		
+	})
+	
+	describe('with `$(element).jQfn()`', function () {
+		
+		it('should be able to instantiate and return jQuery element', function () {
+			var P = $.Plugin.extend({}, {
+				id: 'jQfnTest',
+				jQname: 'jqfntest'
+			});
+			
+			var p = $('#mocha').jqfntest({ pass: true });
+			var p_obj = p.data('jqfntest');
+			
+			assert.equal(p, p_obj.$el);
+			assert.strictEqual(p_obj.pass, true)
 		})
 		
 	})
@@ -166,6 +198,25 @@ describe('Extending', function () {
 			}
 		})
 		
+		it('should create a jQuery method automatically', function () {
+			var P = $.Plugin.extend({}, {
+				id: 'foobar',
+				jQname: 'foobar'
+			});
+			
+			assert.isFunction($.fn.foobar);
+		})
+		
+		it('should NOT create a jQuery method if `jQfn === false`', function () {
+			var P = $.Plugin.extend({}, {
+				id: 'foobar2',
+				jQname: 'foobar2',
+				jQfn: false
+			});
+
+			assert.isUndefined($.fn.foobar2);
+		})
+		
 	})
 	
 });
@@ -205,7 +256,7 @@ describe('Events', function () {
 			}
 		});
 
-		p.on('twerk', p.options.events.pass);
+		p.on('twerk', p.events.pass);
 
 		p.trigger('pass');
 		p.trigger('twerk');
@@ -213,7 +264,7 @@ describe('Events', function () {
 		assert.lengthOf(passes, 2);
 	})
 	
-	it('on Plugin should point to Element', function () {
+	it('should point to Element from Plugin calls', function () {
 		
 		var passes = [];
 		var p = new $.Plugin({
@@ -243,9 +294,77 @@ describe('Calling Methods', function () {
 	
 	describe('with `.setElement()`', function () {
 
-		it('should set the new element')
-		it('and bind all prior passed in events')
-		it('')
+		it('should set the new element', function () {
+			var p = new $.Plugin({
+				el: '#mocha'
+			});
+			
+			p.setElement('body');
+			
+			assert.equal(p.$el.selector, 'body');
+		})
+
+		it('should undelegate all events if new element is set')
+		
+		it('and bind all prior passed in events', function () {
+			// setup: remove all prior events
+			$('#mocha, body').off();
+			
+			var p = new $.Plugin({
+				el: '#mocha',
+				
+				events: {
+					fire: function () {
+						throw new Success('Passed');
+					}
+				}
+			});
+			
+			// faux iterator
+			$.getLength = function (obj) {
+				var length = 0;
+				$.each(obj, function () {
+					length++;
+				});
+				return length;
+			};
+			
+			// phase 1: events set to `#mocha`
+			var $mocha_events = p.$el.data('events');
+			assert.equal($.getLength($mocha_events), 1);
+			
+			p.setElement('body');
+
+			// phase 2: events removed from `#mocha` and added to `body`
+			var $body_events = p.$el.data('events');
+			assert.equal($.getLength($mocha_events), 0);
+			assert.equal($.getLength($body_events), 1);
+		})
+
+		it('should set the object on `$el.data()`', function () {
+			var p = new $.Plugin({
+				el: '#mocha',
+				extra: 'an extra for comparison'
+			});
+
+			assert.equal(p, p.$el.data('pluginjs'));
+		})
+		
+		it('should allow a `jQdata` override', function () {
+			var P = $.Plugin.extend({
+				el: '#mocha',
+				extra: 'an extra for comparison'
+			}, {
+				id: 'jQdataTest',
+				jQname: 'jqdatatest',
+				jQdata: 'jqdata'
+			});
+			
+			var p = new P();
+
+			assert.isUndefined(p.$el.data(P.jQname));
+			assert.equal(p, p.$el.data('jqdata'));
+		})
 		
 	})
 

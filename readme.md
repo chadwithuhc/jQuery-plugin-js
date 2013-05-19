@@ -1,11 +1,11 @@
-# Plugin.js
-A better jQuery plugin boilerplate system.
+# Plugin.js  
+A better jQuery plugin boilerplate system using Backbone-like syntax.
 
 ***
 
 ## What
 
-__Plugin.js__ is a constructor class that helps you create a jQuery plugin that can be extended or inherited. It provides a Backbone.js syntax model with some enhancements to help plugin development.
+__Plugin.js__ is a constructor class that helps you create a jQuery plugin that can be extended or inherited. It provides a Backbone.js syntax model with some enhancements to help plugin development. One of the main goals is to give a Backbone-like experience, without the requirement for Backbone. Think of it like using `Backbone.View` to build a jQuery Plugin.
 
 ## How
 

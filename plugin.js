@@ -32,20 +32,27 @@
 			if (typeof options === 'string') {
 				options = { el: options };
 			}
+			
+			// Set a default for safety
+			options = options || {};
 
-			// Save Construction Params for later reference
-			this.options = $.extend({}, this.defaults, options || {});
+			// Any `defaults` get added to the `options` object
+			this.options = $.extend({}, this.defaults, options.defaults);
+			delete options.defaults;
+			
+			// Everything else gets added directly to `this`
+			$.extend(this, options);
 
 			// Setup a bogus element for events
 			// This is in case we don't have an element before setting or triggering events
 			this.$el = Plugin.bogusElement();
 
 			// Setup and cache the element
-			this.setElement(this.options.el);
+			this.setElement(this.el);
 
 			// Run the `initialize()` if available
 			if (typeof this.initialize === 'function') {
-				this.initialize.apply(this);
+				this.initialize.call(this);
 			}
 
 			return this;
@@ -59,7 +66,7 @@
 			// Plugin.js Version
 			'version': info.version,
 			
-
+			// Events automatically attached to each plugin instance
 			'events': {
 				'error': function (e, msg) {
 					Plugin.console.error(msg);
@@ -71,6 +78,9 @@
 				'id': null,
 				'version': null,
 				'jQname': null
+				// Optional overrides
+				// jQfn: The name for the `$.fn.jQfn` assignment
+				// jQdata: The accessible name for `$el.data(jQdata)`
 			},
 			
 			// Mockup console for safety
@@ -145,6 +155,14 @@
 				// Extend the Childs prototype with passed in properties
 				if (properties) $.extend(true, Child.prototype, properties, { parent: Parent });
 
+				// Setup the jQuery function
+				if (Child.jQfn !== false) {
+					$.fn[Child.jQfn || Child.jQname] = function (options) {
+						new Child($.extend(options, { el: this }));
+						return this;
+					};
+				}
+
 				// Returns a constructor
 				return Child;
 			}
@@ -172,7 +190,7 @@
 				}
 
 				// Get the main element
-				var $el = $(element).eq(0);
+				var $el = element instanceof $ ? element : $(element);
 				// If it doesn't exist, we have to create a bogus element for events
 				if (!$el.length) {
 					$el = Plugin.bogusElement().extend({ selector: $el.selector });
@@ -196,8 +214,8 @@
 				if (Plugin.events) {
 					this.delegateEvents(Plugin.events);
 				}
-				if (this.options.events) {
-					this.delegateEvents(this.options.events);
+				if (this.events) {
+					this.delegateEvents(this.events);
 				}
 				
 				// If no elements were found, write error and finish
@@ -207,7 +225,7 @@
 				}
 
 				// Attach the Plugin to its element
-				this.$el.data(this.jQname, this);
+				this.$el.data(this.constructor.jQdata || this.constructor.jQname, this);
 				
 				return this;
 			},
