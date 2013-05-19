@@ -330,6 +330,29 @@ describe('Events', function () {
 		assert.lengthOf(passes, 3);
 	})
 	
+	it('should mimic Backbone-style events', function () {
+		var pass = false;
+		var p = new $.Plugin({
+			el: '#mocha',
+
+			events: {
+				arg: 'arg',
+				'click #mocha-stats .failures a': function (e) {
+					e.preventDefault();
+					pass = true;
+				}
+			},
+
+			arg: function(e, obj) {
+				assert.equal(this, obj, '`this` is not pointing to Plugin instance');
+			}
+		});
+
+		p.trigger('arg', [p]);
+		p.$('#mocha-stats .failures a').trigger('click');
+		assert.strictEqual(pass, true);
+	})
+	
 });
 
 
@@ -348,7 +371,7 @@ describe('Calling Methods', function () {
 			assert.equal(p.$el.selector, 'body');
 		})
 		
-		it('and bind all prior passed in events', function () {
+		it('and bind all prior passed-in events', function () {
 			// setup: remove all prior events
 			$('#mocha, body').off();
 			
