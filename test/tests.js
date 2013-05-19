@@ -76,9 +76,53 @@ describe('Insantiating', function () {
 			assert.equal(p.status, 'passing');
 		})
 		
-		it('should merge `options.defaults` and `prototype.defaults`')
+		it('should merge `options.defaults` and `prototype.defaults`', function () {
+			var P = $.Plugin.extend({
+				defaults: {
+					one: true,
+					two: false,
+					four: true
+				}
+			}, {
+				id: 'OptionsTest',
+				jQname: 'optionstest'
+			});
+			
+			var p = new P({
+				defaults: {
+					two: true,
+					three: true
+				}
+			});
+			
+			assert.deepEqual(p.options, { one: true, two: true, three: true, four: true });
+		})
 		
-		it('should put all other `options` directly on `this`')
+		it('should put all other `options` directly on `this`', function () {
+			var P = $.Plugin.extend({
+				defaults: {
+					one: true
+				},
+				
+				rootOne: false
+			}, {
+				id: 'OptionsTest',
+				jQname: 'optionstest'
+			});
+
+			var p = new P({
+				defaults: {
+					two: true
+				},
+				
+				rootOne: true,
+				rootTwo: true
+			});
+			console.log(p);
+			assert.deepEqual(p.options, { one: true, two: true });
+			assert.strictEqual(p.rootOne, true);
+			assert.strictEqual(p.rootTwo, true);
+		})
 		
 		it('should run an `initialize()` method if available', function () {
 			// direct instantiation
@@ -303,8 +347,6 @@ describe('Calling Methods', function () {
 			
 			assert.equal(p.$el.selector, 'body');
 		})
-
-		it('should undelegate all events if new element is set')
 		
 		it('and bind all prior passed in events', function () {
 			// setup: remove all prior events
@@ -337,8 +379,8 @@ describe('Calling Methods', function () {
 
 			// phase 2: events removed from `#mocha` and added to `body`
 			var $body_events = p.$el.data('events');
-			assert.equal($.getLength($mocha_events), 0);
-			assert.equal($.getLength($body_events), 1);
+			assert.equal($.getLength($mocha_events), 0, 'Events were not undelegated correctly');
+			assert.equal($.getLength($body_events), 1, 'Events were not delegated to new element correctly');
 		})
 
 		it('should set the object on `$el.data()`', function () {
