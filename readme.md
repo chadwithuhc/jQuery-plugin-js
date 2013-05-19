@@ -11,7 +11,8 @@ __Plugin.js__ is a constructor class that helps you create a jQuery plugin which
 
 ## How
 
-Main goals of Plugin.js:  
+Main goals of Plugin.js:
+
 	- Easily create plugins in a Backbone-style syntax
 	- Allow plugins to be extended to create new plugins
 	- Automatically handle common tasks such as:
@@ -47,7 +48,7 @@ It is obvious that unless you specifically included Backbone and Underscore on y
 __Extended constructors have additional members__  
 When you extend a constructor with `.extend()` you will have access to `this.constructor` and `this.parent` if you need to access those for any reason. There is no `this.__super__` like Backbone has.
 
-__`defaults` and `options`__  
+__<code>defaults</code> and <code>options</code>__  
 When you instantiate, all passed in options under `defaults` will be assigned to `this.options` and everything else will be assigned directly to `this`. This mimics more of the `Backbone.Model` syntax. For Example:
 
     var p = new $.Plugin({
