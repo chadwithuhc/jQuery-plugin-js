@@ -13,16 +13,16 @@ __Plugin.js__ is a constructor class that helps you create a jQuery plugin which
 
 Main goals of Plugin.js:
 
-	- Easily create plugins in a Backbone-style syntax
-	- Allow plugins to be extended to create new plugins
-	- Automatically handle common tasks such as:
-		- Creating instances for each element in the set
-		- Set a unique ID if the element does not have one
-		- Accept and merge options automatically
-		- Auto-attach events on instantiation
-		- Extend jQuery with a method on `$.fn.fnName`
-	- Allows you to rename plugins to whatever you'd like by cloning them
-	- No requirements other than jQuery
+- Easily create plugins in a Backbone-style syntax
+- Allow plugins to be extended to create new plugins
+- Automatically handle common tasks such as:  
+  - Creating instances for each element in the set
+  - Set a unique ID if the element does not have one
+  - Accept and merge options automatically
+  - Auto-attach events on instantiation
+  - Extend jQuery with a method on `$.fn.fnName`
+- Allows you to rename plugins to whatever you'd like by cloning them
+- No requirements other than jQuery
 
 ***
 
