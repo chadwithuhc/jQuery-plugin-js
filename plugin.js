@@ -24,7 +24,7 @@
 		var Plugin = function Plugin(options) {
 			
 			if ( !(this instanceof Plugin)) {
-				throw Error('Missing `new` construct');
+				throw SyntaxError('Missing `new` construct');
 				return this;
 			}
 			
@@ -32,23 +32,20 @@
 			if (typeof options === 'string') {
 				options = { el: options };
 			}
-			
+
 			// Save Construction Params for later reference
-			this.options = options || {};
+			this.options = $.extend({}, this.defaults, options || {});
 
 			// Setup a bogus element for events
 			// This is in case we don't have an element before setting or triggering events
-			this.$el = Plugin.bogusElement;
-
-			// Setup the configuration
-			$.extend(true, this, options);
+			this.$el = Plugin.bogusElement();
 
 			// Setup and cache the element
 			this.setElement(this.options.el);
 
 			// Run the `initialize()` if available
 			if (typeof this.initialize === 'function') {
-				this.initialize.apply(this, arguments);
+				this.initialize.apply(this);
 			}
 
 			return this;
@@ -62,12 +59,10 @@
 			// Plugin.js Version
 			'version': info.version,
 			
-			'config': {
-				'jQevents': ['on','off','one','trigger'],
-				'events': {
-					'error': function (e, message) {
-						Plugin.console.log(message);
-					}
+
+			'events': {
+				'error': function (e, msg) {
+					Plugin.console.error(msg);
 				}
 			},
 
@@ -93,7 +88,7 @@
 			 */
 			'eventProxy': function (target, context) {
 				var e, i, alias,
-				    events = this.config.jQevents,
+				    events = ['on','off','one','trigger'],
 				    // jQuery 1.4 compat
 				    map = { 'on':'bind','off':'unbind' },
 				    jQ4 = !context.on && !!context.bind;
@@ -115,7 +110,7 @@
 			 */
 			'bogusElement': function () {
 				return $('<div/>').extend({ bogus: true });
-			}(),
+			},
 
 			/**
 			 * Extend a Plugin
@@ -126,9 +121,9 @@
 			 * @param statics
 			 */
 			'extend': function (properties, statics) {
-				
+
 				var Parent = this,
-					  P = Plugin;
+				    P = Plugin;
 
 				// The new Plugin constructor
 				var Child = function Plugin (options) {
@@ -172,29 +167,37 @@
 
 				// Trigger a `reset` if we are overwriting
 				if (!this.$el.bogus) {
+					this.undelegateEvents();
 					this.trigger('reset');
 				}
 
 				// Get the main element
 				var $el = $(element).eq(0);
+				// If it doesn't exist, we have to create a bogus element for events
 				if (!$el.length) {
-					$el = Plugin.bogusElement.extend({ selector: $el.selector });
+					$el = Plugin.bogusElement().extend({ selector: $el.selector });
 				}
+				// Set the element whether it's bogus or not
 				this.$el = $el;
+				// Set actual DOM element
 				this.el = $el[0];
+				// Set `this.$el.find()` shorthand
 				this.$ = function (selector) {
 					return $el.find(selector);
 				}
+
+				// Set the unique ID of this instance
+				this.id = this.el.id || this.$el.attr({ id: (Date.now() + 1).toString(36) })[0].id;
 
 				// Copy over events to main object
 				Plugin.eventProxy(this, this.$el);
 
 				// Attach all predefined events
-				if (Plugin.config.events) {
-					this.on(Plugin.config.events);
+				if (Plugin.events) {
+					this.delegateEvents(Plugin.events);
 				}
 				if (this.options.events) {
-					this.on(this.options.events);
+					this.delegateEvents(this.options.events);
 				}
 				
 				// If no elements were found, write error and finish
@@ -202,16 +205,54 @@
 					this.trigger('error', ['No matching elements were found on the page ('+element+')']);
 					return this;
 				}
-				
-				// Set the unique ID of this instance
-				this.id = this.el.id || this.$el.attr({ id: (Date.now() + 1).toString(36) })[0].id;
 
 				// Attach the Plugin to its element
 				this.$el.data(this.jQname, this);
 				
 				return this;
-			}
+			},
 
+			/**
+			 * Delegate Events to the element
+			 *
+			 * Allows us to have the same Backbone-style event assignments:
+			 *
+			 *     {
+			 *       'click .someClass': 'methodName'
+			 *     }
+			 *
+			 * @param events
+			 */
+			'delegateEvents': function (events) {
+				if (!(events || this.events)) return this;
+				this.undelegateEvents();
+				for (var key in events) {
+					var method = events[key];
+					if (typeof method != 'function') method = this[events[key]];
+					if (!method) continue;
+
+					var match = key.match(/^(\S+)\s*(.*)$/);
+					var eventName = match[1], selector = match[2];
+					method = $.proxy(method, this);
+					eventName += '.delegateEvents_' + this.id;
+					if (selector === '') {
+						this.$el.on(eventName, method);
+					} else {
+						this.$el.on(eventName, selector, method);
+					}
+				}
+				return this;
+			},
+
+			/**
+			 * Remove Events
+			 * 
+			 * Reverses anything we did with `this.delegateEvents()`
+			 */
+			'undelegateEvents': function() {
+				this.$el.off('.delegateEvents_' + this.id);
+				return this;
+			}
 		});
 		
 		// Return the Constructor: `$.Plugin()`
