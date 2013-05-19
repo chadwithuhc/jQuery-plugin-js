@@ -47,7 +47,6 @@ $.PluginName = $.Plugin.extend({
 		// this == element
 	},
 	
-	// doesn't exist yet
 	render: function () {
 		// generic method
 	}

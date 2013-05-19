@@ -118,7 +118,7 @@ describe('Insantiating', function () {
 				rootOne: true,
 				rootTwo: true
 			});
-			console.log(p);
+			
 			assert.deepEqual(p.options, { one: true, two: true });
 			assert.strictEqual(p.rootOne, true);
 			assert.strictEqual(p.rootTwo, true);

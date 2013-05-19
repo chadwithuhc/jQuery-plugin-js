@@ -270,6 +270,11 @@
 			'undelegateEvents': function() {
 				this.$el.off('.delegateEvents_' + this.id);
 				return this;
+			},
+			
+			// Default render method
+			render: function () {
+				return this;
 			}
 		});
 		
