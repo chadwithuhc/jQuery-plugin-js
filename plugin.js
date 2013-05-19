@@ -182,6 +182,9 @@
 				}
 				this.$el = $el;
 				this.el = $el[0];
+				this.$ = function (selector) {
+					return $el.find(selector);
+				}
 
 				// Copy over events to main object
 				Plugin.eventProxy(this, this.$el);
